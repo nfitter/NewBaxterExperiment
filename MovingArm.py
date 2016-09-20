@@ -29,7 +29,7 @@ class MovingArm(object):
 
 		self._ovrl_disp = dict()							# Overall displacement used in force calculations
 		self._vel_0 = dict()								# Detected velocity used in force calculations
-		self._pos_0 = {'right_w1': 1.6193157223693849}
+		self._pos_0 = {'right_w1': 1.4593157223693849}
 
 		self._cubic = False									# True for cubic motion, but false for sinsoidal motion
 
