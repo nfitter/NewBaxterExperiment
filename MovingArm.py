@@ -29,7 +29,7 @@ class MovingArm(object):
 
 		self._ovrl_disp = dict()							# Overall displacement used in force calculations
 		self._vel_0 = dict()								# Detected velocity used in force calculations
-		self._pos_0 = {'right_w1': 1.4593157223693849}
+		self._pos_0 = {'right_w1': 1.3593157223693849}
 
 		self._cubic = False									# True for cubic motion, but false for sinsoidal motion
 
@@ -233,9 +233,9 @@ class MovingArm(object):
 			des_vel = des_disp.copy()
 			des_acc = des_disp.copy()
 
-			des_disp[self._joint] = -self._amplitude * np.sin(2 * np.pi * self._frequency * self._timeElapsed + np.pi)
-			des_vel[self._joint] = -self._amplitude * 2 * np.pi * np.cos(2 * np.pi * self._frequency * self._timeElapsed + np.pi)
-			des_acc[self._joint] = -self._amplitude * 4 * (np.pi ** 2) * np.sin(2 * np.pi * self._frequency * self._timeElapsed + np.pi)
+			des_disp[self._joint] = -self._amplitude * np.sin(2 * np.pi * self._frequency * self._timeElapsed + np.pi/2) + self._amplitude
+			des_vel[self._joint] = -self._amplitude * 2 * np.pi * np.cos(2 * np.pi * self._frequency * self._timeElapsed + np.pi/2) + self._amplitude
+			des_acc[self._joint] = -self._amplitude * 4 * (np.pi ** 2) * np.sin(2 * np.pi * self._frequency * self._timeElapsed + np.pi/2) + self._amplitude
 
 			des_pos = self._start_pos.copy()
 			des_pos[self._joint] = self._start_pos[self._joint] + des_disp[self._joint]

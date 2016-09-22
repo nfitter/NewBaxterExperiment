@@ -3,6 +3,7 @@
 # Import objects from custom files
 from HandEngine import HandEngine
 from MovingArm import MovingArm
+from Head import Head
 
 # Import other necessary packages
 import rospy
@@ -47,6 +48,8 @@ global engine                 # object generated using the HandEngine.py code
 global rep_num                # counter for how many cycles of hand clapping have occurred
 rep_num = 0
 
+############################ Accelerometer callback function ###############################
+
 def callback(msg):
     # Get global vars
     global accelerations
@@ -87,11 +90,14 @@ def callback(msg):
         if time.time() > last_contact_time + 0.3:
             blocking = False
 
+############################# Main trial routine function #################################
+
 def main():
     # Get global vars
     global motion_time
     global engine
     global rep_num
+    global last_contact_time
 
     # Let user input experiment trial number (1-25, defined in dictionary below)
     parser = argparse.ArgumentParser(description = 'Input stimulus number.')
@@ -124,11 +130,22 @@ def main():
     factor = mult_factor * motion_time    # calculate a "factor" that makes it possible to slow Baxter down if desired
     engine = HandEngine()                # object generated using the HandEngine.py code
     arm = MovingArm(1000.0)                # object generated using the MovingArm.py code
+    face = Head("faces/")      # object generated using the Head.py code
     limit = 25                            # identify number of clapping cycles that user should complete
     elapsed_time = dummy_ints[0]        # keep track of elapsed time into trial
 
+    # Load face image on Baxter's screen
+    thread.start_new_thread(face.run,(5,))
+    face.changeEmotion('Happy')
+
+    # Make robot look to the right
+    face.changeGaze('E')
+
+    # Wait to make sure face engine has time to start up
+    rospy.sleep(5.)
+
     # Define robot start pose
-    start_pos = {'right_s0': -0.8620972018066407, 'right_s1': 0.35665053277587894, 'right_w0': 1.1696603494262696, 'right_w1': 1.4593157223693849, 'right_w2': -0.02070874061279297, 'right_e0': 1.5132720455200197, 'right_e1': 1.9381847232788088}
+    start_pos = {'right_s0': -0.8620972018066407, 'right_s1': 0.35665053277587894, 'right_w0': 1.1696603494262696, 'right_w1': 1.3593157223693849, 'right_w2': -0.02070874061279297, 'right_e0': 1.5132720455200197, 'right_e1': 1.9381847232788088}
 
     # Move Baxter to start pose
     arm._right_limb.move_to_joint_positions(start_pos)
@@ -146,6 +163,11 @@ def main():
 
     # Set control rate
     control_rate = rospy.Rate(1000)
+
+    # Print cue so operator knows robot is ready
+    print 'Ready to start trial'
+
+    ################################ Robot Leader Case ##########################################
 
     # Part of code for robot lead condition, either follower cooperation case
     if robot_lead:
@@ -171,20 +193,28 @@ def main():
                 # Increment hand contact count
                 rep_num = rep_num + 1
 
+                # Set reactive facial expression
+                face.switchEmotion('Joy','Happy',0.15)
+
+    ################################ Robot Follower Case #########################################
+
     # Part of code for robot follow condition
-    if not robot_lead:
+    else:
 
         # Compute frequency (1/T) for first robot motion cycle
         engine.frequency = 1 / (motion_time + factor)    
         
         # Compute appropriate amplitude of hand motion using eqn fit from human motion
-        for_amp = engine.calculateAmplitude(motion_time + (factor))
+        for_amp = 0
 
         # Record the time that the experiment trial is starting
         trial_start_time = time.time()
 
         # Do this loop during experiment trial time...
-        while rep_num < limit and time.time() - trial_start_time < 60:
+        while rep_num < limit and time.time() - trial_start_time < 40:
+
+            # Initialize sinusoidal arm motion
+            arm.updateSinusoidalMotion(for_amp, engine.frequency)
 
             # Wait for first few contacts before moving robot
             if rep_num < 3:
@@ -196,7 +226,8 @@ def main():
                     if rep_num < 2:
 
                         # Command 0-amplitude curve
-                        arm.updateSinusoidalMotion(0, engine.frequency)
+                        arm.updateSinusoidalMotion(for_amp, engine.frequency)
+                        trial_start_time = time.time()
                     
                     # Then get ready with the right sinusoid parameters
                     else:
@@ -240,7 +271,7 @@ def main():
                         rep_num = rep_num + 1
 
                 # Part of code for uncooperative robot follower condition
-                if not follower_coop:
+                else:
 
                     # See if enough time has elapsed to change robot motion pattern
                     if time.time() - trial_start_time > elapsed_time:
