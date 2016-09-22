@@ -42,7 +42,8 @@ class MovingArm(object):
 		self._gtime = 0.0
 		self._gst = time.time()
 
-		self._data = []
+		self._data1 = []
+		self._data2 = []
 		self._time = []
 
 		ln = self._left_limb.joint_names()
@@ -138,10 +139,10 @@ class MovingArm(object):
 
 	def _update_parameters(self):
 		"""Helper function that sets the control parameters for the robot"""
-		Kp_vals = [40, 40, 58, 56, 27, 42, 31, 40, 40, 58, 56, 27, 42, 31]
-		Kd_vals = [2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 1, 2]
-		Kf_vals = [0.2, 0.2, 0.5, 0.9, 0.02, 0.12, 0.08, 0.2, 0.2, 0.5, 0.9, 0.02, 0.12, 0.08]
-		w_vals = [0.065, 0.065, 0.16, 0.085, 0.075, 0.065, 0.085, 0.065, 0.065, 0.16, 0.085, 0.075, 0.065, 0.085]
+		Kp_vals = [40, 40, 58, 56, 27, 42, 31, 40, 40, 58, 56, 27, 30, 31]
+		Kd_vals = [2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 1, 2.5, 2]
+		Kf_vals = [0.2, 0.2, 0.5, 0.9, 0.02, 0.12, 0.08, 0.2, 0.2, 0.5, 0.9, 0.02, 0.5, 0.08]
+		w_vals = [0.065, 0.065, 0.16, 0.085, 0.075, 0.065, 0.085, 0.065, 0.065, 0.16, 0.085, 0.075, 0.075, 0.085]
 
 		ii = 0
 		for joint in self._joint_names:
@@ -246,7 +247,8 @@ class MovingArm(object):
 			self._pos_0[self._joint] = des_pos[self._joint]
 
 			# Store variables to plot later
-			self._data.append(des_pos[self._joint])
+			self._data1.append(des_pos[self._joint])
+			self._data2.append(cur_pos[self._joint])
 			self._time.append(time.time()-self._gst)
 
 		for joint in self._joint_names:
@@ -270,11 +272,11 @@ class MovingArm(object):
 
 		self._right_limb.set_joint_torques(right_torques)
 
-		f = open("ippolito_position_slow1.csv", "a")
+		f = open("test.csv", "a")
 		f.write(str(self._gtime) + ',' + str(cur_pos[self._joint]) + '\n')
 		f.close()
 
-		f = open("ippolito_desposition_slow1.csv", "a")
+		f = open("test.csv", "a")
 		f.write(str(self._gtime) + ',' + str(des_disp[self._joint]) + '\n')
 		f.close()
 
