@@ -13,7 +13,7 @@ class Head(object):
         self.directory = directory
 
         self.colors = ["Blue", "Gray", "Green", "Orange", "Purple", "Red", "White", "Yellow"]
-        self.emotions = ["Afraid", "Confused", "Happy", "Joy", "Neutral", "Sad", "Sassy", "Silly", "SleepOpen", "SleepClosed", "Surpise", "Worried"]
+        self.emotions = ["Afraid", "Confused", "Happy", "Joy", "Neutral", "Reactive", "Sad", "Sassy", "Silly", "SleepOpen", "SleepClosed", "Surpise", "Worried"]
         self.gazes = ["Blink", "SW", "SE", "NW", "NE"]
 
         self.color = "Blue"
@@ -107,8 +107,10 @@ class Head(object):
                 return True
         return False
 
-    def switchEmotion(self, nextEm, default, ticks):
+    def switchEmotion(self, nextEm, gaze1, default, gaze2, ticks):
+        self.changeGaze(gaze1)
         self.changeEmotion(nextEm)
+        self.changeGaze(gaze2)
         self.switchTime = rospy.get_rostime().to_sec()
         self.switchTicks = ticks
         self.switchBack = default

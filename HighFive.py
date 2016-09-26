@@ -194,7 +194,7 @@ def main():
                 rep_num = rep_num + 1
 
                 # Set reactive facial expression
-                face.switchEmotion('Joy','Happy',0.15)
+                face.switchEmotion('Reactive','Blink','Happy','NW',0.15)
 
     ################################ Robot Follower Case #########################################
 
