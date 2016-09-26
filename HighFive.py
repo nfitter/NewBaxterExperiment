@@ -74,7 +74,7 @@ def callback(msg):
         x_filt = lfilter(b, a, accelerations)                # filter signal
 
         # Generate threshold based on hand-clapping tempo based on first study; lower for slower tempos
-        threshold = (1 / motion_time) + 1.8
+        threshold = (1 / motion_time) + 2.0
 
         # Check if max filtered signal is above identified threshold for moving case
         if max(x_filt) > threshold:
@@ -106,10 +106,10 @@ def main():
     trial_cond = (foo.integers[0])
 
     # Access lookup table of conditions based on this input, assign appropriate values to global variables controlling trial conditions
-    trial_stimuli = {1:[True,True,1.333], 2:[True,True,1.833], 3:[True,True,2.333],
-            4:[True,False,1.333], 5:[True,False,1.833], 6:[True,False,2.333],
-            7:[False,True,1.333], 8:[False,True,1.833], 9:[False,True,2.333],
-            10:[False,False,1.333], 11:[False,False,1.833], 12:[False,False,2.333]}
+    trial_stimuli = {1:[True,True,1.333], 2:[True,True,1.833],
+            3:[True,False,1.333], 4:[True,False,1.833],
+            5:[False,True,1.333], 6:[False,True,1.833],
+            7:[False,False,1.333], 8:[False,False,1.833]}
 
     # Break out selected dictionary entries into experiment trial variables
     robot_lead = trial_stimuli[trial_cond][0] # set Boolean for turning face animation on or off
@@ -291,6 +291,9 @@ def main():
 
     # Define robot end pose
     end_pos = {'right_s0': -0.8620972018066407, 'right_s1': 0.35665053277587894, 'right_w0': 1.1696603494262696, 'right_w1': 1.8593157223693849, 'right_w2': -0.02070874061279297, 'right_e0': 1.5132720455200197, 'right_e1': 1.9381847232788088}
+
+    # Load happy ending image onto Baxter's face
+    face.changeEmotion('Joy')
 
     # Move Baxter to end pose
     arm._right_limb.move_to_joint_positions(end_pos)

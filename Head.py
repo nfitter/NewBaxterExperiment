@@ -207,7 +207,7 @@ class Head(object):
             elif self.trackRight:
                 motion = random.uniform(-0.5, 0.0)
             # Set Baxter head angle
-            self.setAngle(-0.25)
+            self.setAngle(-0.3)
             self.headTime = now
             self.headWait = random.uniform(20, 80)
         
