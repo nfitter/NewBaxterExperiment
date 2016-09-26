@@ -76,12 +76,12 @@ class Head(object):
 
     def updateFace(self):
         self.faceset = True
-        if self.blinking:
-            fn = self.directory + self.emotion + "Blink" + self.color + ".jpg"
-            self._setFace(fn)
-        else:
-            fn = self.directory + self.emotion + self.gaze + self.color + ".jpg"
-            self._setFace(fn)
+        # if self.blinking:
+        #     fn = self.directory + self.emotion + "Blink" + self.color + ".jpg"
+        #     self._setFace(fn)
+        # else:
+        fn = self.directory + self.emotion + self.gaze + self.color + ".jpg"
+        self._setFace(fn)
 
     def changeColor(self, color):
         if not self.color == color:
@@ -114,6 +114,9 @@ class Head(object):
         self.switchBack = default
 
     def changeGaze(self, gaze):
+        '''
+        Use this function to update Baxter gaze
+        '''
         self.faceset = False
         gaze = gaze.capitalize()
         if gaze in self.gazes:
@@ -203,7 +206,8 @@ class Head(object):
                 motion = random.uniform(0.0, 0.5)
             elif self.trackRight:
                 motion = random.uniform(-0.5, 0.0)
-            self.setAngle(motion)
+            # Set Baxter head angle
+            self.setAngle(-0.25)
             self.headTime = now
             self.headWait = random.uniform(20, 80)
         

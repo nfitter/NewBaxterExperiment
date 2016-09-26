@@ -135,14 +135,14 @@ def main():
     elapsed_time = dummy_ints[0]        # keep track of elapsed time into trial
 
     # Load face image on Baxter's screen
-    thread.start_new_thread(face.run,(5,))
+    thread.start_new_thread(face.run,(10,))
     face.changeEmotion('Happy')
 
     # Make robot look to the right
     face.changeGaze('E')
 
     # Wait to make sure face engine has time to start up
-    rospy.sleep(5.)
+    #rospy.sleep(5.)
 
     # Define robot start pose
     start_pos = {'right_s0': -0.8620972018066407, 'right_s1': 0.35665053277587894, 'right_w0': 1.1696603494262696, 'right_w1': 1.3593157223693849, 'right_w2': -0.02070874061279297, 'right_e0': 1.5132720455200197, 'right_e1': 1.9381847232788088}
