@@ -18,23 +18,6 @@ from sensor_msgs.msg import (
 import matplotlib.pyplot as plt
 import argparse                             # package for allowing user input
 
-# Set up simulated "hand contacts", plotting, and system shutdown using keypresses
-def handle_keyboard(engine, arm):
-    while not rospy.is_shutdown():
-        c = baxter_external_devices.getch()
-        if c:
-            if c == 'p':
-                # Keyboard input "p" registers a pretend handclap
-                engine._clapDetected()
-            if c == 'd':
-                # Keyboard input "d" creates a plot
-                plt.figure()
-                plt.plot(accelerations)
-                plt.show()
-            if c == 'f':
-                # Keyboard input "f" needed to successfully quit code
-                sys.exit(0)
-
 # Create global variables to allow us to track all the things we want to track
 global accelerations        # buffer of accelerations that we filter to see if a hand contact has occurred
 accelerations = []
@@ -47,6 +30,8 @@ start_time = time.time()
 global engine                 # object generated using the HandEngine.py code
 global rep_num                # counter for how many cycles of hand clapping have occurred
 rep_num = 0
+global trial_cond           # number letting us know which experiment trial (code) number each recording is for
+subj_num = 2             # number helping us keep track of whose data this is ********************change for each user**********************
 
 ############################ Accelerometer callback function ###############################
 
@@ -58,9 +43,11 @@ def callback(msg):
     global last_contact_time
     global start_time
     global engine
+    global trial_cond
+    global subj_num
 
     # Name file for saving acceleration readings and save them
-    file_name = 'test_rec.csv' 
+    file_name = 'Subject' + str(subj_num) + 'Accel' + str(trial_cond) + '.csv' 
     f = open(file_name, "a")
     f.write(str(time.time() - start_time) + ',' + str(msg.linear_acceleration.x) + ',' + str(msg.linear_acceleration.y) + ',' + str(msg.linear_acceleration.z) + str("\n"))
     f.close()
@@ -74,7 +61,7 @@ def callback(msg):
         x_filt = lfilter(b, a, accelerations)                # filter signal
 
         # Generate threshold based on hand-clapping tempo based on first study; lower for slower tempos
-        threshold = (1 / motion_time) + 2.0
+        threshold = 4.5
 
         # Check if max filtered signal is above identified threshold for moving case
         if max(x_filt) > threshold:
@@ -87,7 +74,7 @@ def callback(msg):
 
     else:
         # If we are still in the "blocking" time, ignore accelerometer until blocking time has passed
-        if time.time() > last_contact_time + 0.3:
+        if time.time() > last_contact_time + 0.4:
             blocking = False
 
 ############################# Main trial routine function #################################
@@ -98,6 +85,8 @@ def main():
     global engine
     global rep_num
     global last_contact_time
+    global trial_cond
+    global subj_num
 
     # Let user input experiment trial number (1-25, defined in dictionary below)
     parser = argparse.ArgumentParser(description = 'Input stimulus number.')
@@ -109,7 +98,11 @@ def main():
     trial_stimuli = {1:[True,True,1.333], 2:[True,True,1.833],
             3:[True,False,1.333], 4:[True,False,1.833],
             5:[False,True,1.333], 6:[False,True,1.833],
-            7:[False,False,1.333], 8:[False,False,1.833]}
+            7:[False,False,1.333], 8:[False,False,1.833],
+            9:[True,True,1.333], 
+            10:[True,False,1.333],
+            11:[False,True,1.333],
+            12:[False,False,1.333]}
 
     # Break out selected dictionary entries into experiment trial variables
     robot_lead = trial_stimuli[trial_cond][0] # set Boolean for turning face animation on or off
@@ -129,20 +122,14 @@ def main():
     mult_factor = 0.0                    # factor for multiplication mentioned in next line
     factor = mult_factor * motion_time    # calculate a "factor" that makes it possible to slow Baxter down if desired
     engine = HandEngine()                # object generated using the HandEngine.py code
-    arm = MovingArm(1000.0)                # object generated using the MovingArm.py code
+    arm = MovingArm(1000.0,subj_num,trial_cond)                # object generated using the MovingArm.py code
     face = Head("faces/")      # object generated using the Head.py code
     limit = 25                            # identify number of clapping cycles that user should complete
     elapsed_time = dummy_ints[0]        # keep track of elapsed time into trial
 
     # Load face image on Baxter's screen
-    thread.start_new_thread(face.run,(10,))
-    face.changeEmotion('Happy')
-
-    # Make robot look to the right
-    face.changeGaze('E')
-
-    # Wait to make sure face engine has time to start up
-    #rospy.sleep(5.)
+    thread.start_new_thread(face.run,(30,))
+    face.changeEmotion('HappyNWBlue')
 
     # Define robot start pose
     start_pos = {'right_s0': -0.8620972018066407, 'right_s1': 0.35665053277587894, 'right_w0': 1.1696603494262696, 'right_w1': 1.3593157223693849, 'right_w2': -0.02070874061279297, 'right_e0': 1.5132720455200197, 'right_e1': 1.9381847232788088}
@@ -154,9 +141,6 @@ def main():
     arm.beginSinusoidalMotion("right_w1")
     engine.resetStartTime()
     shift = False
-
-    # Start a new thread for keyboard control
-    thread.start_new_thread(handle_keyboard, (engine,arm))
 
     # Start subscriber that listens to accelerometer values
     rospy.Subscriber('/robot/accelerometer/right_accelerometer/state', Imu, callback)
@@ -181,6 +165,9 @@ def main():
         # Record the time that the experiment trial is starting
         trial_start_time = time.time()
 
+        # Bring motion back to beginning of sinusoid
+        arm.rezeroStart()
+
         # Do this loop during experiment trial time...
         while rep_num < limit and time.time() - trial_start_time < 40:
 
@@ -194,7 +181,7 @@ def main():
                 rep_num = rep_num + 1
 
                 # Set reactive facial expression
-                face.switchEmotion('Reactive','Blink','Happy','NW',0.15)
+                face.switchEmotion('ReactiveBlinkBlue','HappyNWBlue',0.15)
 
     ################################ Robot Follower Case #########################################
 
@@ -222,6 +209,9 @@ def main():
                 # If engine is pinged (in case of sensed hand contact)...
                 if engine.ping():
 
+                    # Set reactive facial expression
+                    face.switchEmotion('ReactiveBlinkBlue','HappyNWBlue',0.15)
+
                     # For first few contacts, use dummy 0-amplitude curve
                     if rep_num < 2:
 
@@ -234,6 +224,7 @@ def main():
                         tempM = engine.estimateInterval(1)                              # pred next motion cycle period
                         motion_time = tempM                                            # update cycle time
                         engine.frequency = 1 / (motion_time + factor)                   # update cycle frequency
+                        arm.rezeroStart()                                              # bring motion back to beginning of sinusoid
                         for_amp = engine.calculateAmplitude(motion_time + (factor))        # update motion amplitude
                         
                     # Increment hand contact count
@@ -251,6 +242,9 @@ def main():
                     # If engine is pinged (in case of sensed hand contact)...
                     if engine.ping():
 
+                        # Set reactive facial expression
+                        face.switchEmotion('ReactiveBlinkBlue','HappyNWBlue',0.15)
+
                         # Compute estimated appropriate next motion cycle
                         tempM = engine.estimateInterval(1)
 
@@ -265,6 +259,7 @@ def main():
                         factor = mult_factor * motion_time                            # update padding factor that allows for slowing down
                         engine.frequency = 1 / (motion_time + factor)                # update cycle frequency
                         for_amp = engine.calculateAmplitude(motion_time + factor)    # update motion amplitude
+                        arm.rezeroStart()                                              # bring motion back to beginning of sinusoid
                         arm.beginSinusoidalMotion("right_w1")                        # start new sinusoidal motion cycle
 
                         # Increment hand contact count
@@ -272,6 +267,11 @@ def main():
 
                 # Part of code for uncooperative robot follower condition
                 else:
+
+                    if engine.ping():
+
+                        # Set reactive facial expression
+                        face.switchEmotion('SillyBlinkBlue','HappyNWBlue',0.15)
 
                     # See if enough time has elapsed to change robot motion pattern
                     if time.time() - trial_start_time > elapsed_time:
@@ -293,11 +293,12 @@ def main():
     end_pos = {'right_s0': -0.8620972018066407, 'right_s1': 0.35665053277587894, 'right_w0': 1.1696603494262696, 'right_w1': 1.8593157223693849, 'right_w2': -0.02070874061279297, 'right_e0': 1.5132720455200197, 'right_e1': 1.9381847232788088}
 
     # Load happy ending image onto Baxter's face
-    face.changeEmotion('Joy')
+    face.changeEmotion('JoyNWPurple')
 
     # Move Baxter to end pose
     arm._right_limb.move_to_joint_positions(end_pos)
 
+    # Visualize what just happened
     plt.figure()
     plt.plot(arm._time, arm._data1, arm._time, arm._data2)
     plt.show()

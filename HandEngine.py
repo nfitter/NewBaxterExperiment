@@ -49,7 +49,7 @@ class HandEngine(object):
 
 	def calculateAmplitude(self, interval):
 		"""Calculates the desired displacement of clapping motion for a given time interval"""
-		return 0.15*np.exp(-0.4286*(1/interval))
+		return 0.18*np.exp(-0.4286*(1/interval))
 
 	def estimateInterval(self, algorithm=2):
 		"""Estimates the next clapping time interval from the list of previous intervals"""

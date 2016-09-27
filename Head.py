@@ -15,10 +15,12 @@ class Head(object):
         self.colors = ["Blue", "Gray", "Green", "Orange", "Purple", "Red", "White", "Yellow"]
         self.emotions = ["Afraid", "Confused", "Happy", "Joy", "Neutral", "Reactive", "Sad", "Sassy", "Silly", "SleepOpen", "SleepClosed", "Surpise", "Worried"]
         self.gazes = ["Blink", "SW", "SE", "NW", "NE"]
+        self.name = ""
 
         self.color = "Blue"
         self.emotion = "Happy"
         self.gaze = "NW"
+        self.name = "BlueNWHappy"
 
         self.faces = dict()
 
@@ -30,8 +32,6 @@ class Head(object):
 
         self.headWait = 10
         self.headTime = rospy.get_rostime().to_sec()
-
-        self._setupBlink()
 
         self.trackLeft = False
         self.trackRight = True
@@ -64,103 +64,22 @@ class Head(object):
         """Causes the head to move to the desired angle"""
         self._head.set_pan(angle)
 
-    def nod(self):
-        """Causes the head to nod"""
-        self._head.command_nod()
-
-    def sleep(self):
-        self._setFace(self.directory + 'SleepClosed' + self.color + '.jpg')
-
-    def sleepOpen(self):
-        self._setFace(self.directory + 'SleepOpen' + self.color + '.jpg')
-
     def updateFace(self):
         self.faceset = True
-        # if self.blinking:
-        #     fn = self.directory + self.emotion + "Blink" + self.color + ".jpg"
-        #     self._setFace(fn)
-        # else:
-        fn = self.directory + self.emotion + self.gaze + self.color + ".jpg"
+        fn = self.directory + self.name + ".jpg"
         self._setFace(fn)
 
-    def changeColor(self, color):
-        if not self.color == color:
-            self.faceset = False
-            color = color.capitalize()
-            if color in self.colors:
-                self.color = color
-                return True
-        return False
+    def changeEmotion(self, newname):
+        self.faceset = False
+        self.switchTicks = 0.0
+        self.name = newname
 
-    def switchColor(self, nextCo, default, ticks):
-        self.changeColor(nextCo)
-        self.cswitchTime = rospy.get_rostime().to_sec()
-        self.cswitchTicks = ticks
-        self.cswitchBack = default
-
-    def changeEmotion(self, emotion):
-        if not self.emotion == emotion:
-            self.faceset = False
-            emotion = emotion.capitalize()
-            if emotion in self.emotions:
-                self.emotion = emotion
-                return True
-        return False
-
-    def switchEmotion(self, nextEm, gaze1, default, gaze2, ticks):
-        self.changeGaze(gaze1)
-        self.changeEmotion(nextEm)
-        self.changeGaze(gaze2)
+    def switchEmotion(self, newname, defaultname, ticks):
+        self.name = newname
+        self.faceset = False
         self.switchTime = rospy.get_rostime().to_sec()
         self.switchTicks = ticks
-        self.switchBack = default
-
-    def changeGaze(self, gaze):
-        '''
-        Use this function to update Baxter gaze
-        '''
-        self.faceset = False
-        gaze = gaze.capitalize()
-        if gaze in self.gazes:
-            self.gaze = gaze
-            return True
-        return False
-
-    def _setupBlink(self):
-        self.blinkTime = rospy.get_rostime().to_sec()
-        self.blinkLength = random.uniform(0.1, 0.4) * 2
-        self.blinkWait = random.uniform(1.8, 3.8) * 2
-
-    def setLeftPos(self, leftpos):
-        self.leftPos = leftpos
-        self._updateGaze()
-
-    def setRightPos(self, rightpos):
-        self.rightPos = rightpos 
-        self._updateGaze()
-
-    def _updateGaze(self):
-        if not (self.trackRight and self.trackLeft):
-            if self.trackRight:
-                if self.rightPos['right_s1'] < 0.0:
-                    self.gaze = 'NW'
-                else:
-                    self.gaze = 'SW'
-            elif self.trackLeft:
-                if self.leftPos['left_s1'] < 0.0:
-                    self.gaze = 'NE'
-                else:
-                    self.gaze = 'SE'
-        else:
-            total = (self.rightPos['right_s1'] + self.leftPos['left_s1']) / 2.0
-            if total < 0.0:
-                self.gaze = "N"
-            else:
-                self.gaze = "S"
-            if random.randint(0, 1) == 0:
-                self.gaze += "E"
-            else:
-                self.gaze += "W"
+        self.switchBack = defaultname
 
     def run(self, rate):
         pause = rospy.Rate(rate)
@@ -170,47 +89,19 @@ class Head(object):
 
     def update(self):
         now = rospy.get_rostime().to_sec()
-        # Handle gaze
-        if self.blinking:
-            if now - self.blinkTime > self.blinkLength:
-                self.blinking = False
-                self.blinkTime = now
-                self._setupBlink()
-                self.updateFace()
-        else:
-            if now - self.blinkTime > self.blinkWait:
-                self.blinking = True
-                self.blinkTime = now
-                self.updateFace()
                 
         if not self.switchTicks == 0.0:
             if now - self.switchTime > self.switchTicks:
-                self.changeEmotion(self.switchBack)
+                self.name = self.switchBack
                 self.switchTicks = 0.0
                 self.updateFace()
-
-        if not self.cswitchTicks == 0.0:
-            if now - self.cswitchTime > self.cswitchTicks:
-                self.changeColor(self.cswitchBack)
-                self.cswitchTicks = 0.0
-                self.updateFace()
-
+                print 'yup'
 
         if not self.faceset:
             self.updateFace()
+            print 'yup'
 
-        # Handle head motion
-        if now - self.headTime > self.headWait:
-            motion = 0.0
-            if self.trackLeft and self.trackRight:
-                motion = random.uniform(-0.5, 0.5)
-            elif self.trackLeft:
-                motion = random.uniform(0.0, 0.5)
-            elif self.trackRight:
-                motion = random.uniform(-0.5, 0.0)
-            # Set Baxter head angle
-            self.setAngle(-0.3)
-            self.headTime = now
-            self.headWait = random.uniform(20, 80)
+        # Run the following if the head is in the wrong position
+        #self.setAngle(-0.3)
         
 
