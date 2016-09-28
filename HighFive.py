@@ -31,7 +31,7 @@ global engine                 # object generated using the HandEngine.py code
 global rep_num                # counter for how many cycles of hand clapping have occurred
 rep_num = 0
 global trial_cond           # number letting us know which experiment trial (code) number each recording is for
-subj_num = 2             # number helping us keep track of whose data this is ********************change for each user**********************
+subj_num = 5             # number helping us keep track of whose data this is ********************change for each user**********************
 
 ############################ Accelerometer callback function ###############################
 
